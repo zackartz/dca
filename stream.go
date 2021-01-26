@@ -2,7 +2,7 @@ package dca
 
 import (
 	"errors"
-	"github.com/bwmarrin/discordgo"
+	"github.com/andersfylling/disgord"
 	"io"
 	"sync"
 	"time"
@@ -21,7 +21,7 @@ type StreamingSession struct {
 	done chan error
 
 	source OpusReader
-	vc     *discordgo.VoiceConnection
+	vc     disgord.VoiceConnection
 
 	paused     bool
 	framesSent int
@@ -35,7 +35,7 @@ type StreamingSession struct {
 // source   : The source of the opus frames to be sent, either from an encoder or decoder.
 // vc       : The voice connecion to stream to.
 // done     : If not nil, an error will be sent on it when completed.
-func NewStream(source OpusReader, vc *discordgo.VoiceConnection, done chan error) *StreamingSession {
+func NewStream(source OpusReader, vc disgord.VoiceConnection, done chan error) *StreamingSession {
 	session := &StreamingSession{
 		source: source,
 		vc:     vc,
@@ -102,11 +102,20 @@ func (s *StreamingSession) readNext() error {
 	// Timeout after 100ms (Maybe this needs to be changed?)
 	timeOut := time.After(time.Second)
 
+	err = s.vc.StartSpeaking()
+	if err != nil {
+		return err
+	}
+
 	// This will attempt to send on the channel before the timeout, which is 1s
 	select {
 	case <-timeOut:
 		return ErrVoiceConnClosed
-	case s.vc.OpusSend <- opus:
+	default:
+		err = s.vc.SendOpusFrame(opus)
+		if err != nil {
+			return err
+		}
 	}
 
 	s.Lock()
