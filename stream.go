@@ -102,11 +102,6 @@ func (s *StreamingSession) readNext() error {
 	// Timeout after 100ms (Maybe this needs to be changed?)
 	timeOut := time.After(time.Second)
 
-	err = s.vc.StartSpeaking()
-	if err != nil {
-		return err
-	}
-
 	// This will attempt to send on the channel before the timeout, which is 1s
 	select {
 	case <-timeOut:
